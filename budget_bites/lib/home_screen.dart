@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isDark;
+
+  const HomeScreen({super.key, required this.isDark});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -10,6 +12,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Budget Bites')),
+      body: Center(),
+      backgroundColor: Colors.black,
+    );
   }
 }
