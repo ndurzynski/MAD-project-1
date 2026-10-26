@@ -27,6 +27,8 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   bool isDarkMode = true;
+
+  bool _isHomeScreen = true;
   int _currentScreenIndex = 0;
 
   @override
@@ -38,15 +40,21 @@ class _AppState extends State<App> {
           ? ThemeData.dark(useMaterial3: false)
           : ThemeData.light(useMaterial3: false),
       home: Scaffold(
-        body: _currentScreenIndex == 0
+        // TODO: Maybe need to fix to ensure data is not lost when exiting without saving
+        body: _isHomeScreen
+            ? HomeScreen(isDark: isDarkMode)
+            : _currentScreenIndex == 0
             ? MealDetail(isDark: isDarkMode)
             : _currentScreenIndex == 1
             ? PurchaseHistory(isDark: isDarkMode)
-            : Settings(isDark: isDarkMode),
+            : _currentScreenIndex == 2
+            ? Settings(isDark: isDarkMode)
+            : HomeScreen(isDark: isDarkMode),
         bottomNavigationBar: NavigationBar(
           onDestinationSelected: (int index) {
             setState(() {
               _currentScreenIndex = index;
+              _isHomeScreen = false;
             });
           },
           indicatorColor: Colors.amber,

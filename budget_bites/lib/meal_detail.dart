@@ -1,4 +1,3 @@
-import 'package:budget_bites/main.dart';
 import 'package:flutter/material.dart';
 
 class MealDetail extends StatefulWidget {
