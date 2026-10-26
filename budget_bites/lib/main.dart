@@ -25,10 +25,9 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState() extends State<App> {
+class _AppState extends State<App> {
   bool isDarkMode = true;
-
-  final ScreenState _currentScreen = ScreenState.homeScreen;
+  int _currentScreenIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +37,30 @@ class _AppState() extends State<App> {
       theme: isDarkMode
           ? ThemeData.dark(useMaterial3: false)
           : ThemeData.light(useMaterial3: false),
-      home: switch (_currentScreen) {
-        ScreenState.homeScreen => const HomeScreen(),
-        ScreenState.mealDetail => const MealDetail(),
-        ScreenState.mealEditor => const MealEditor(),
-        ScreenState.purchaseHistory => const PurchaseHistory(),
-        ScreenState.settings => const Settings(),
-      },
+      home: Scaffold(
+        body: _currentScreenIndex == 0
+            ? MealDetail(isDark: isDarkMode)
+            : _currentScreenIndex == 1
+            ? PurchaseHistory(isDark: isDarkMode)
+            : Settings(isDark: isDarkMode),
+        bottomNavigationBar: NavigationBar(
+          onDestinationSelected: (int index) {
+            setState(() {
+              _currentScreenIndex = index;
+            });
+          },
+          indicatorColor: Colors.amber,
+          selectedIndex: _currentScreenIndex,
+          destinations: const <Widget>[
+            NavigationDestination(icon: Icon(Icons.food_bank), label: 'Meals'),
+            NavigationDestination(icon: Icon(Icons.dining), label: 'History'),
+            NavigationDestination(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

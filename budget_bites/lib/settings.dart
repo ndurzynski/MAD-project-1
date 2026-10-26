@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class Settings extends StatefulWidget {
-  const Settings({super.key});
+  final bool isDark;
+
+  const Settings({super.key, required this.isDark});
 
   @override
   State<Settings> createState() => _SettingsState();
@@ -10,6 +12,6 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(body: Text('This is the Settings Screen'));
   }
 }
