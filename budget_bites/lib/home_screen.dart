@@ -11,16 +11,23 @@ const List<String> cuisines = [
 
 class HomeScreen extends StatefulWidget {
   final bool isDark;
+  final double userBudget;
+  final ValueChanged<double> onBudgetChanged;
+  final double maxBudget;
 
-  const HomeScreen({super.key, required this.isDark});
+  const HomeScreen({
+    super.key,
+    required this.isDark,
+    required this.userBudget,
+    required this.onBudgetChanged,
+    required this.maxBudget,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final double maxBudget = 100;
-  double _userBudget = 0;
   String _userCuisine = cuisines.first;
 
   // TODO: Fix funtionality for Add Meal button. It should swap the screen to Meal Editor Dashboard
@@ -32,21 +39,19 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: const Text('Budget Bites')),
       body: ListView(
         children: <Widget>[
-          Text('Meal Budget'),
+          Text('Meal Budget \$${widget.userBudget.toStringAsFixed(2)}'),
           Row(
             children: [
               Text('\$0'),
               Slider(
-                value: _userBudget,
-                max: maxBudget,
+                value: widget.userBudget,
+                max: widget.maxBudget,
                 min: 0.0,
                 onChanged: (double value) {
-                  setState(() {
-                    _userBudget = value;
-                  });
+                  widget.onBudgetChanged(value);
                 },
               ),
-              Text('\$${maxBudget.toInt()}'),
+              Text('\$${widget.maxBudget.toInt()}'),
             ],
           ),
           //TODO: DropdownMenu

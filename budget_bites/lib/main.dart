@@ -27,9 +27,10 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   bool isDarkMode = true;
-
   bool _isHomeScreen = true;
   int _currentScreenIndex = 0;
+  double _userBudget = 0;
+  double _userMaxBudget = 100;
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +43,41 @@ class _AppState extends State<App> {
       home: Scaffold(
         // TODO: Maybe need to fix to ensure data is not lost when exiting without saving
         body: _isHomeScreen
-            ? HomeScreen(isDark: isDarkMode)
+            ? HomeScreen(
+                isDark: isDarkMode,
+                userBudget: _userBudget,
+                maxBudget: _userMaxBudget,
+                onBudgetChanged: (value) {
+                  setState(() {
+                    _userBudget = value;
+                  });
+                },
+              )
             : _currentScreenIndex == 0
             ? MealDetail(isDark: isDarkMode)
             : _currentScreenIndex == 1
             ? PurchaseHistory(isDark: isDarkMode)
             : _currentScreenIndex == 2
-            ? Settings(isDark: isDarkMode)
-            : HomeScreen(isDark: isDarkMode),
+            ? Settings(
+                isDark: isDarkMode,
+                userBudget: _userBudget,
+                maxBudget: _userMaxBudget,
+                onBudgetChanged: (value) {
+                  setState(() {
+                    _userBudget = value;
+                  });
+                },
+              )
+            : HomeScreen(
+                isDark: isDarkMode,
+                userBudget: _userBudget,
+                maxBudget: _userMaxBudget,
+                onBudgetChanged: (value) {
+                  setState(() {
+                    _userBudget = value;
+                  });
+                },
+              ),
         bottomNavigationBar: NavigationBar(
           onDestinationSelected: (int index) {
             setState(() {
