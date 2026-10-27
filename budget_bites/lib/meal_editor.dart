@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class MealEditor extends StatefulWidget {
   final bool isDark;
+  final Map<String, Object>? meal;
 
-  const MealEditor({super.key, required this.isDark});
+  const MealEditor({super.key, required this.isDark, this.meal});
 
   @override
   State<MealEditor> createState() => _MealEditorState();
@@ -27,7 +28,9 @@ class _MealEditorState extends State<MealEditor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Meal')),
+      appBar: AppBar(
+        title: Text(widget.meal == null ? 'Add Meal' : 'Edit Meal'),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -35,6 +38,7 @@ class _MealEditorState extends State<MealEditor> {
             padding: const EdgeInsets.all(16),
             children: [
               TextFormField(
+                initialValue: widget.meal?['name'] as String?,
                 decoration: const InputDecoration(labelText: 'Name'),
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
@@ -48,6 +52,7 @@ class _MealEditorState extends State<MealEditor> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                initialValue: widget.meal?['category'] as String?,
                 decoration: const InputDecoration(labelText: 'Category'),
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
@@ -61,6 +66,7 @@ class _MealEditorState extends State<MealEditor> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                initialValue: widget.meal?['price']?.toString(),
                 decoration: const InputDecoration(
                   labelText: 'Price',
                   prefixText: '\$ ',
