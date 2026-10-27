@@ -27,7 +27,7 @@ class _AppState extends State<App> {
   bool isDarkMode = true;
   int _currentScreenIndex = 0;
   double _userBudget = 0;
-  double _userMaxBudget = 100;
+  final double _userMaxBudget = 100;
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_database.dart';
 import 'meal_editor.dart';
 
 const List<String> cuisines = [
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
   final double userBudget;
   final ValueChanged<double> onBudgetChanged;
   final double maxBudget;
+  final AppDatabase? database;
 
   const HomeScreen({
     super.key,
@@ -23,6 +25,7 @@ class HomeScreen extends StatefulWidget {
     required this.userBudget,
     required this.onBudgetChanged,
     required this.maxBudget,
+    this.database,
   });
 
   @override
@@ -31,15 +34,47 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String _userCuisine = cuisines.first;
-  final List<Map<String, Object>> _meals = [];
+  final List<Map<String, Object?>> _meals = [];
+  bool _loading = true;
+  bool _deleting = false;
+  String? _loadError;
 
-  Future<void> _openMealEditor([int? index]) async {
-    final meal = await Navigator.push<Map<String, Object>>(
+  AppDatabase get _database => widget.database ?? AppDatabase.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMeals();
+  }
+
+  Future<void> _loadMeals() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final meals = await _database.getMeals();
+      if (!mounted) return;
+      setState(() {
+        _meals
+          ..clear()
+          ..addAll(meals);
+      });
+    } on AppDatabaseException catch (error) {
+      if (mounted) setState(() => _loadError = error.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openMealEditor([Map<String, Object?>? existingMeal]) async {
+    final meal = await Navigator.push<Map<String, Object?>>(
       context,
-      MaterialPageRoute<Map<String, Object>>(
+      MaterialPageRoute<Map<String, Object?>>(
         builder: (context) => MealEditor(
           isDark: widget.isDark,
-          meal: index == null ? null : _meals[index],
+          meal: existingMeal,
+          database: _database,
         ),
       ),
     );
@@ -47,7 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || meal == null) return;
 
     setState(() {
-      if (index == null) {
+      final index = _meals.indexWhere((item) => item['id'] == meal['id']);
+      if (index == -1) {
         _meals.add(meal);
       } else {
         _meals[index] = meal;
@@ -55,12 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _deleteMeal(int index) async {
+  Future<void> _deleteMeal(Map<String, Object?> meal) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete meal?'),
-        content: Text('Delete "${_meals[index]['name']}"?'),
+        content: Text('Delete "${meal['name']}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -76,9 +112,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted || confirmed != true) return;
 
-    setState(() {
-      _meals.removeAt(index);
-    });
+    setState(() => _deleting = true);
+    try {
+      await _database.deleteMeal(meal['id'] as int);
+      if (!mounted) return;
+      setState(() => _meals.removeWhere((item) => item['id'] == meal['id']));
+    } on AppDatabaseException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
   }
 
   @override
@@ -108,24 +153,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Center(
             child: ElevatedButton(
-              onPressed: () => _openMealEditor(),
+              onPressed: _loading || _deleting || _loadError != null
+                  ? null
+                  : () => _openMealEditor(),
               child: Text('+ Add Meal'),
             ),
           ),
-          for (var index = 0; index < _meals.length; index++)
+          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_loadError != null) ...[
+            Text(_loadError!),
+            TextButton(onPressed: _loadMeals, child: const Text('Retry')),
+          ],
+          for (final meal in _meals)
             ListTile(
-              onTap: () => _openMealEditor(index),
-              title: Text(_meals[index]['name'] as String),
-              subtitle: Text(_meals[index]['category'] as String),
+              key: ValueKey(meal['id']),
+              onTap: _loading || _deleting ? null : () => _openMealEditor(meal),
+              title: Text(meal['name'] as String),
+              subtitle: Text(meal['category'] as String),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '\$${(_meals[index]['price'] as double).toStringAsFixed(2)}',
-                  ),
+                  Text('\$${formatPriceCents(meal['price_cents'] as int)}'),
                   IconButton(
                     tooltip: 'Delete meal',
-                    onPressed: () => _deleteMeal(index),
+                    onPressed: _loading || _deleting
+                        ? null
+                        : () => _deleteMeal(meal),
                     icon: const Icon(Icons.delete),
                   ),
                 ],
