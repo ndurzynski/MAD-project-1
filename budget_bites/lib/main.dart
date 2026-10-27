@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'home_screen.dart';
-import 'meal_detail.dart';
-import 'meal_editor.dart';
 import 'purchase_history.dart';
 import 'settings.dart';
 
@@ -27,7 +25,6 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   bool isDarkMode = true;
-  bool _isHomeScreen = true;
   int _currentScreenIndex = 0;
   double _userBudget = 0;
   double _userMaxBudget = 100;
@@ -41,48 +38,36 @@ class _AppState extends State<App> {
           ? ThemeData.dark(useMaterial3: false)
           : ThemeData.light(useMaterial3: false),
       home: Scaffold(
-        // TODO: Maybe need to fix to ensure data is not lost when exiting without saving
-        body: _isHomeScreen
-            ? HomeScreen(
-                isDark: isDarkMode,
-                userBudget: _userBudget,
-                maxBudget: _userMaxBudget,
-                onBudgetChanged: (value) {
-                  setState(() {
-                    _userBudget = value;
-                  });
-                },
-              )
-            : _currentScreenIndex == 0
-            ? MealDetail(isDark: isDarkMode)
-            : _currentScreenIndex == 1
-            ? PurchaseHistory(isDark: isDarkMode)
-            : _currentScreenIndex == 2
-            ? Settings(
-                isDark: isDarkMode,
-                userBudget: _userBudget,
-                maxBudget: _userMaxBudget,
-                onBudgetChanged: (value) {
-                  setState(() {
-                    _userBudget = value;
-                  });
-                },
-              )
-            : HomeScreen(
-                isDark: isDarkMode,
-                userBudget: _userBudget,
-                maxBudget: _userMaxBudget,
-                onBudgetChanged: (value) {
-                  setState(() {
-                    _userBudget = value;
-                  });
-                },
-              ),
+        body: IndexedStack(
+          index: _currentScreenIndex,
+          children: [
+            HomeScreen(
+              isDark: isDarkMode,
+              userBudget: _userBudget,
+              maxBudget: _userMaxBudget,
+              onBudgetChanged: (value) {
+                setState(() {
+                  _userBudget = value;
+                });
+              },
+            ),
+            PurchaseHistory(isDark: isDarkMode),
+            Settings(
+              isDark: isDarkMode,
+              userBudget: _userBudget,
+              maxBudget: _userMaxBudget,
+              onBudgetChanged: (value) {
+                setState(() {
+                  _userBudget = value;
+                });
+              },
+            ),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           onDestinationSelected: (int index) {
             setState(() {
               _currentScreenIndex = index;
-              _isHomeScreen = false;
             });
           },
           indicatorColor: Colors.amber,

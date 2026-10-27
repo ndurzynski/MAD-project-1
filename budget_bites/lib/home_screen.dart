@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'meal_editor.dart';
+
 const List<String> cuisines = [
   'All',
   'Thai',
@@ -29,9 +31,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userCuisine = cuisines.first;
+  final List<Map<String, Object>> _meals = [];
 
-  // TODO: Fix funtionality for Add Meal button. It should swap the screen to Meal Editor Dashboard
-  void addMeal() {}
+  Future<void> addMeal() async {
+    final meal = await Navigator.push<Map<String, Object>>(
+      context,
+      MaterialPageRoute<Map<String, Object>>(
+        builder: (context) => MealEditor(isDark: widget.isDark),
+      ),
+    );
+
+    if (!mounted || meal == null) return;
+
+    setState(() {
+      _meals.add(meal);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +73,20 @@ class _HomeScreenState extends State<HomeScreen> {
           // DropdownMenu(dropdownMenuEntries: cuisines),
           //TODO: List All meals that fit the budget and current cuisine
 
-          //TODO: Add Add Meal Button
           Center(
             child: ElevatedButton(
               onPressed: addMeal,
               child: Text('+ Add Meal'),
             ),
           ),
+          for (final meal in _meals)
+            ListTile(
+              title: Text(meal['name'] as String),
+              subtitle: Text(meal['category'] as String),
+              trailing: Text(
+                '\$${(meal['price'] as double).toStringAsFixed(2)}',
+              ),
+            ),
         ],
       ),
       backgroundColor: Colors.black,
