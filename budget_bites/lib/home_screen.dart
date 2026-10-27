@@ -30,21 +30,54 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _userCuisine = cuisines.first;
+  final String _userCuisine = cuisines.first;
   final List<Map<String, Object>> _meals = [];
 
-  Future<void> addMeal() async {
+  Future<void> _openMealEditor([int? index]) async {
     final meal = await Navigator.push<Map<String, Object>>(
       context,
       MaterialPageRoute<Map<String, Object>>(
-        builder: (context) => MealEditor(isDark: widget.isDark),
+        builder: (context) => MealEditor(
+          isDark: widget.isDark,
+          meal: index == null ? null : _meals[index],
+        ),
       ),
     );
 
     if (!mounted || meal == null) return;
 
     setState(() {
-      _meals.add(meal);
+      if (index == null) {
+        _meals.add(meal);
+      } else {
+        _meals[index] = meal;
+      }
+    });
+  }
+
+  Future<void> _deleteMeal(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete meal?'),
+        content: Text('Delete "${_meals[index]['name']}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    setState(() {
+      _meals.removeAt(index);
     });
   }
 
@@ -75,16 +108,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Center(
             child: ElevatedButton(
-              onPressed: addMeal,
+              onPressed: () => _openMealEditor(),
               child: Text('+ Add Meal'),
             ),
           ),
-          for (final meal in _meals)
+          for (var index = 0; index < _meals.length; index++)
             ListTile(
-              title: Text(meal['name'] as String),
-              subtitle: Text(meal['category'] as String),
-              trailing: Text(
-                '\$${(meal['price'] as double).toStringAsFixed(2)}',
+              onTap: () => _openMealEditor(index),
+              title: Text(_meals[index]['name'] as String),
+              subtitle: Text(_meals[index]['category'] as String),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '\$${(_meals[index]['price'] as double).toStringAsFixed(2)}',
+                  ),
+                  IconButton(
+                    tooltip: 'Delete meal',
+                    onPressed: () => _deleteMeal(index),
+                    icon: const Icon(Icons.delete),
+                  ),
+                ],
               ),
             ),
         ],
