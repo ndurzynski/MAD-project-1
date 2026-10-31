@@ -1,0 +1,2 @@
+# COST SUGGESTION
+The AI feature is our cost suggestion feature. It is implemented in cost_suggestion.dart as the CostSuggestion class. It is a rule based AI that takes the last three purchases a user has made and averages it out in order to predict the next meal cost of the user.
