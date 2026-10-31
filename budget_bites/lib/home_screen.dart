@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_database.dart';
+import 'meal_detail.dart';
 import 'meal_editor.dart';
 
 const List<String> cuisines = [
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
   final ValueChanged<double> onBudgetChanged;
   final double maxBudget;
   final AppDatabase? database;
+  final bool isCompact;
 
   const HomeScreen({
     super.key,
@@ -26,6 +28,7 @@ class HomeScreen extends StatefulWidget {
     required this.onBudgetChanged,
     required this.maxBudget,
     this.database,
+    this.isCompact = false,
   });
 
   @override
@@ -33,7 +36,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String _userCuisine = cuisines.first;
+  String _userCuisine = cuisines.first;
   final List<Map<String, Object?>> _meals = [];
   bool _loading = true;
   bool _deleting = false;
@@ -91,6 +94,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _openMealDetail(Map<String, Object?> meal) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            MealDetail(isDark: widget.isDark, meal: meal, database: _database),
+      ),
+    );
+    if (mounted) await _loadMeals();
+  }
+
   Future<void> _deleteMeal(Map<String, Object?> meal) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -128,28 +142,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final budgetCents = (widget.userBudget * 100).round();
+    final filteredMeals = _meals.where((meal) {
+      return (meal['price_cents'] as int) <= budgetCents &&
+          (_userCuisine == 'All' ||
+              (meal['category'] as String).trim().toLowerCase() ==
+                  _userCuisine.toLowerCase());
+    }).toList();
+    // The editor accepts custom cuisines, so include them in the filter too.
+    final cuisineOptions = <String, String>{
+      for (final cuisine in cuisines) cuisine.toLowerCase(): cuisine,
+    };
+    for (final meal in _meals) {
+      final cuisine = (meal['category'] as String).trim();
+      cuisineOptions.putIfAbsent(cuisine.toLowerCase(), () => cuisine);
+    }
+    cuisineOptions.putIfAbsent(_userCuisine.toLowerCase(), () => _userCuisine);
     return Scaffold(
       appBar: AppBar(title: const Text('Budget Bites')),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: <Widget>[
           Text('Meal Budget \$${widget.userBudget.toStringAsFixed(2)}'),
           Row(
             children: [
               Text('\$0'),
-              Slider(
-                value: widget.userBudget,
-                max: widget.maxBudget,
-                min: 0.0,
-                onChanged: (double value) {
-                  widget.onBudgetChanged(value);
-                },
+              Expanded(
+                child: Slider(
+                  value: widget.userBudget,
+                  divisions: (widget.maxBudget * 100).round(),
+                  max: widget.maxBudget,
+                  min: 0.0,
+                  onChanged: (double value) {
+                    widget.onBudgetChanged(value);
+                  },
+                ),
               ),
               Text('\$${widget.maxBudget.toInt()}'),
             ],
           ),
-          //TODO: DropdownMenu
-          // DropdownMenu(dropdownMenuEntries: cuisines),
-          //TODO: List All meals that fit the budget and current cuisine
+          DropdownButtonFormField<String>(
+            initialValue: _userCuisine,
+            decoration: const InputDecoration(labelText: 'Cuisine'),
+            items: [
+              for (final cuisine in cuisineOptions.values)
+                DropdownMenuItem(value: cuisine, child: Text(cuisine)),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _userCuisine = value);
+            },
+          ),
 
           Center(
             child: ElevatedButton(
@@ -164,24 +206,48 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(_loadError!),
             TextButton(onPressed: _loadMeals, child: const Text('Retry')),
           ],
-          for (final meal in _meals)
-            ListTile(
+          if (!_loading && _loadError == null && filteredMeals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                _meals.isEmpty
+                    ? 'No meals yet. Add a meal to get started.'
+                    : 'No meals match your budget and cuisine. '
+                          'Increase your budget or choose another cuisine.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          for (final meal in filteredMeals)
+            Card(
               key: ValueKey(meal['id']),
-              onTap: _loading || _deleting ? null : () => _openMealEditor(meal),
-              title: Text(meal['name'] as String),
-              subtitle: Text(meal['category'] as String),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('\$${formatPriceCents(meal['price_cents'] as int)}'),
-                  IconButton(
-                    tooltip: 'Delete meal',
-                    onPressed: _loading || _deleting
-                        ? null
-                        : () => _deleteMeal(meal),
-                    icon: const Icon(Icons.delete),
-                  ),
-                ],
+              margin: EdgeInsets.symmetric(vertical: widget.isCompact ? 2 : 8),
+              child: ListTile(
+                dense: widget.isCompact,
+                visualDensity: widget.isCompact
+                    ? VisualDensity.compact
+                    : VisualDensity.standard,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: widget.isCompact ? 0 : 12,
+                ),
+                onTap: _loading || _deleting
+                    ? null
+                    : () => _openMealDetail(meal),
+                title: Text(meal['name'] as String),
+                subtitle: Text(meal['category'] as String),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('\$${formatPriceCents(meal['price_cents'] as int)}'),
+                    IconButton(
+                      tooltip: 'Delete meal',
+                      onPressed: _loading || _deleting
+                          ? null
+                          : () => _deleteMeal(meal),
+                      icon: const Icon(Icons.delete),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

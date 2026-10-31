@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-class Settings extends StatefulWidget {
+class Settings extends StatelessWidget {
   final bool isDark;
   final double userBudget;
   final ValueChanged<double> onBudgetChanged;
   final double maxBudget;
+  final bool isCompact;
+  final ValueChanged<bool> onCompactChanged;
 
   const Settings({
     super.key,
@@ -12,16 +14,9 @@ class Settings extends StatefulWidget {
     required this.userBudget,
     required this.onBudgetChanged,
     required this.maxBudget,
+    required this.isCompact,
+    required this.onCompactChanged,
   });
-
-  @override
-  State<Settings> createState() => _SettingsState();
-}
-
-class _SettingsState extends State<Settings> {
-  bool _isCompact = false;
-
-  void saveSetting() {}
 
   @override
   Widget build(BuildContext context) {
@@ -29,38 +24,33 @@ class _SettingsState extends State<Settings> {
       appBar: AppBar(title: const Text('Budget Bites')),
       body: ListView(
         children: <Widget>[
-          Text('Meal Budget \$${widget.userBudget.toStringAsFixed(2)}'),
+          Text('Meal Budget \$${userBudget.toStringAsFixed(2)}'),
           Row(
             children: [
               Text('\$0'),
-              Slider(
-                value: widget.userBudget,
-                max: widget.maxBudget,
-                min: 0.0,
-                onChanged: (double value) {
-                  widget.onBudgetChanged(value);
-                },
+              Expanded(
+                child: Slider(
+                  value: userBudget,
+                  max: maxBudget,
+                  divisions: (maxBudget * 100).round(),
+                  min: 0.0,
+                  onChanged: (double value) {
+                    onBudgetChanged(value);
+                  },
+                ),
               ),
-              Text('\$${widget.maxBudget.toInt()}'),
+              Text('\$${maxBudget.toInt()}'),
             ],
           ),
-          Row(
-            children: [
-              Checkbox(
-                value: _isCompact,
-                onChanged: (bool? value) {
-                  setState(() {
-                    _isCompact = value!;
-                  });
-                },
-              ),
-              Text('Compact Meal Cards'),
-            ],
+          CheckboxListTile(
+            title: const Text('Compact Meal Cards'),
+            value: isCompact,
+            onChanged: (value) {
+              if (value != null) onCompactChanged(value);
+            },
           ),
 
-          Center(
-            child: ElevatedButton(onPressed: saveSetting, child: Text('Save')),
-          ),
+          const Center(child: Text('Settings are saved automatically.')),
         ],
       ),
       backgroundColor: Colors.black,

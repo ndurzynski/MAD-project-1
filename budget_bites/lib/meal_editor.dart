@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_database.dart';
+import 'cost_suggestion.dart';
 
 class MealEditor extends StatefulWidget {
   final bool isDark;
@@ -21,6 +22,93 @@ class _MealEditorState extends State<MealEditor> {
   int _priceCents = 0;
   bool _saving = false;
   String? _error;
+  late final TextEditingController _priceController;
+  CostSuggestion? _suggestion;
+  bool _loadingSuggestion = true;
+  String? _suggestionError;
+
+  @override
+  void initState() {
+    super.initState();
+    _priceController = TextEditingController(
+      text: widget.meal == null
+          ? ''
+          : formatPriceCents(widget.meal!['price_cents'] as int),
+    );
+    _loadSuggestion();
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSuggestion() async {
+    final mealId = widget.meal?['id'] as int?;
+    if (mealId == null) {
+      _loadingSuggestion = false;
+      return;
+    }
+    // Capture the cutoff once per editor opening, before reading saved logs.
+    final now = DateTime.now();
+    try {
+      final logs = await (widget.database ?? AppDatabase.instance)
+          .getPurchaseLogs(mealId: mealId);
+      final suggestion = suggestCost(logs, mealId: mealId, now: now);
+      if (mounted) setState(() => _suggestion = suggestion);
+    } on AppDatabaseException catch (error) {
+      if (mounted) setState(() => _suggestionError = error.message);
+    } finally {
+      if (mounted) setState(() => _loadingSuggestion = false);
+    }
+  }
+
+  Widget _buildSuggestion() {
+    final suggestion = _suggestion;
+    final estimate = suggestion?.estimateCents;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Cost suggestion'),
+        if (_loadingSuggestion)
+          const Text('Loading purchase history...')
+        else if (_suggestionError != null)
+          Text(_suggestionError!)
+        else ...[
+          if (suggestion?.hasInvalidInput ?? false)
+            const Text(
+              'Invalid purchase history. Prices must be nonnegative. '
+              'Check saved prices and dates, then reopen this meal.',
+            ),
+          if (suggestion == null || suggestion.inputs.length < 3)
+            const Text('Not enough history.'),
+          if (estimate != null) ...[
+            Text('Suggested price: \$${formatPriceCents(estimate)}'),
+            Text(
+              'Input prices, newest first: ${suggestion!.inputs.map((input) => '\$${formatPriceCents(input.priceCents)}').join(', ')}',
+            ),
+            Text(
+              'Date range (UTC): '
+              '${suggestion.inputs.last.purchasedAt.toIso8601String()} to '
+              '${suggestion.inputs.first.purchasedAt.toIso8601String()}',
+            ),
+            const Text(
+              'Average of the last three purchases, excluding future dates, '
+              'rounded to the nearest cent. Apply or keep your price. '
+              'Only Save stores the meal.',
+            ),
+            TextButton(
+              onPressed: _saving
+                  ? null
+                  : () => _priceController.text = formatPriceCents(estimate),
+              child: const Text('Apply suggestion'),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
 
   Future<void> _saveMeal() async {
     if (_saving) return;
@@ -126,9 +214,7 @@ class _MealEditorState extends State<MealEditor> {
                 const SizedBox(height: 16),
                 TextFormField(
                   readOnly: _saving,
-                  initialValue: widget.meal == null
-                      ? null
-                      : formatPriceCents(widget.meal!['price_cents'] as int),
+                  controller: _priceController,
                   decoration: const InputDecoration(
                     labelText: 'Estimated price',
                     prefixText: '\$ ',
@@ -146,6 +232,8 @@ class _MealEditorState extends State<MealEditor> {
                   onSaved: (value) => _priceCents = parsePriceCents(value!)!,
                   onFieldSubmitted: (_) => _saveMeal(),
                 ),
+                const SizedBox(height: 24),
+                _buildSuggestion(),
                 const SizedBox(height: 24),
                 if (_error != null) Text(_error!),
                 ElevatedButton(
