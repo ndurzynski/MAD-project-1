@@ -120,7 +120,11 @@ class _AppState extends State<App> {
                     isCompact: _isCompact,
                     database: widget.database,
                   ),
-                  PurchaseHistory(isDark: isDarkMode),
+                  PurchaseHistory(
+                    isDark: isDarkMode,
+                    isActive: _currentScreenIndex == 1,
+                    database: widget.database,
+                  ),
                   Settings(
                     isDark: isDarkMode,
                     userBudget: _userBudget,
