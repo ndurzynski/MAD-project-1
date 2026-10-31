@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_database.dart';
+import 'meal_detail.dart';
 import 'meal_editor.dart';
 
 const List<String> cuisines = [
@@ -91,6 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _meals[index] = meal;
       }
     });
+  }
+
+  Future<void> _openMealDetail(Map<String, Object?> meal) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            MealDetail(isDark: widget.isDark, meal: meal, database: _database),
+      ),
+    );
+    if (mounted) await _loadMeals();
   }
 
   Future<void> _deleteMeal(Map<String, Object?> meal) async {
@@ -220,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: _loading || _deleting
                     ? null
-                    : () => _openMealEditor(meal),
+                    : () => _openMealDetail(meal),
                 title: Text(meal['name'] as String),
                 subtitle: Text(meal['category'] as String),
                 trailing: Row(

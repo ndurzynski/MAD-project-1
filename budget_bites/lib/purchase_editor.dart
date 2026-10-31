@@ -6,12 +6,14 @@ class PurchaseEditor extends StatefulWidget {
   final AppDatabase database;
   final List<Map<String, Object?>> meals;
   final Map<String, Object?>? purchase;
+  final int? initialMealId;
 
   const PurchaseEditor({
     super.key,
     required this.database,
     required this.meals,
     this.purchase,
+    this.initialMealId,
   });
 
   @override
@@ -29,7 +31,7 @@ class _PurchaseEditorState extends State<PurchaseEditor> {
   @override
   void initState() {
     super.initState();
-    _mealId = widget.purchase?['meal_id'] as int?;
+    _mealId = widget.purchase?['meal_id'] as int? ?? widget.initialMealId;
     _date = widget.purchase == null
         ? DateTime.now()
         : DateTime.parse(widget.purchase!['purchased_at'] as String).toLocal();
@@ -68,7 +70,7 @@ class _PurchaseEditorState extends State<PurchaseEditor> {
           purchasedAt: _date,
         );
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, _priceCents);
     } on AppDatabaseException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {

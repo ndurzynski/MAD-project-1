@@ -70,9 +70,9 @@ class _PurchaseHistoryState extends State<PurchaseHistory> {
         _showError('Add a meal before recording a purchase.');
         return;
       }
-      final saved = await Navigator.push<bool>(
+      final savedPrice = await Navigator.push<int>(
         context,
-        MaterialPageRoute<bool>(
+        MaterialPageRoute<int>(
           builder: (context) => PurchaseEditor(
             database: _database,
             meals: meals,
@@ -80,7 +80,7 @@ class _PurchaseHistoryState extends State<PurchaseHistory> {
           ),
         ),
       );
-      if (mounted && saved == true) await _loadPurchases();
+      if (mounted && savedPrice != null) await _loadPurchases();
     } on AppDatabaseException catch (error) {
       if (mounted) _showError(error.message);
     } finally {
