@@ -8,5 +8,11 @@ This project uses Flutter in order to compile and run the project. After install
 flutter run
 ```
 
+Alternatively, you can get an apk file.
+```
+flutter build apk --release
+```
+The apk file will be found in build/app/outputs/flutter-apk
+
 ## Usage
 The app has three tabs that are navigated on the bottom screen, Home / Meal Details, Purchase History, and Settings. The user can Add a meal in the Home Screen, Add a purchased meal in the Purchase History, or Change Settings.
